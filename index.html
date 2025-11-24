@@ -248,16 +248,40 @@
 
             async copyToClipboard(elementId) {
                 const el = document.getElementById(elementId);
-                el.select();
-                try {
-                    await navigator.clipboard.writeText(el.value);
-                    const btn = el.parentElement.querySelector('button');
-                    const originalText = btn.innerText;
-                    btn.innerText = "已复制!";
-                    setTimeout(() => btn.innerText = originalText, 2000);
-                } catch (err) {
-                    alert("复制失败，请手动复制");
+                if (!el.value) {
+                    alert("代码尚未生成，请稍等...");
+                    return;
                 }
+
+                el.select();
+                el.setSelectionRange(0, 99999);
+
+                try {
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        await navigator.clipboard.writeText(el.value);
+                    } else {
+                        throw new Error('Clipboard API unavailable');
+                    }
+                    this.showCopySuccess(el);
+                } catch (err) {
+                    try {
+                        const successful = document.execCommand('copy');
+                        if (successful) {
+                            this.showCopySuccess(el);
+                        } else {
+                            throw new Error('execCommand failed');
+                        }
+                    } catch (fallbackErr) {
+                        alert("自动复制失败。请手动长按文本框全选复制。");
+                    }
+                }
+            }
+
+            showCopySuccess(el) {
+                const btn = el.parentElement.querySelector('button');
+                const originalText = btn.innerText;
+                btn.innerText = "已复制!";
+                setTimeout(() => btn.innerText = originalText, 2000);
             }
 
             initVisualizer(containerId, sourceStream) {
